@@ -1,0 +1,163 @@
+To create a pivot table with both the count, percentage of column total, and include a specific field in the column area, 
+the VBA code can be further updated to add the specified field to the Column area.
+
+Below is an updated version of the VBA code where:
+
+You'll specify which field should be placed in the Column area.
+The PivotTable will include both count and percentage of column total for each field in the Row area.
+
+---------------------------------------------------------------------------------------------------------------------------------
+VBA Code for Count, Percentage, and Specific Field in Column Area:
+
+
+
+Sub CreatePivotTablesWithCountPercentageAndColumnField()
+    Dim wsData As Worksheet
+    Dim wsPivot As Worksheet
+    Dim ptCache As PivotCache
+    Dim pt As PivotTable
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim dataRange As Range
+    Dim pivotStartRow As Long
+    Dim i As Integer
+    Dim fieldName As String
+    Dim headerDict As Object
+    Dim j As Integer
+    Dim columnField As String
+
+    ' Set your data worksheet (change "Sheet1" to your actual sheet name)
+    On Error Resume Next
+    Set wsData = ThisWorkbook.Worksheets("Sheet1") ' Change to your data sheet name
+    On Error GoTo 0
+    
+    If wsData Is Nothing Then
+        MsgBox "Worksheet 'Sheet1' does not exist. Please check the name."
+        Exit Sub
+    End If
+
+    ' Prompt the user to enter the field for the Column area
+    columnField = InputBox("Enter the name of the field to be placed in the Column area:", "Column Field Selection")
+    
+    If columnField = "" Then
+        MsgBox "No field selected for the Column area. Exiting."
+        Exit Sub
+    End If
+
+    ' Check if the field exists in the data
+    If Application.WorksheetFunction.CountIf(wsData.Rows(1), columnField) = 0 Then
+        MsgBox "Field '" & columnField & "' does not exist in the dataset. Exiting."
+        Exit Sub
+    End If
+
+    Set wsPivot = ThisWorkbook.Worksheets.Add ' Create a new sheet for the Pivot Tables
+
+    ' Find the last row and column in the data sheet
+    lastRow = wsData.Cells(wsData.Rows.Count, 1).End(xlUp).Row
+    lastCol = wsData.Cells(1, wsData.Columns.Count).End(xlToLeft).Column
+
+    ' Check if the dataset has enough data
+    If lastRow < 1 Or lastCol < 2 Then
+        MsgBox "The dataset is empty or does not have enough columns."
+        Exit Sub
+    End If
+
+    ' Initialize the dictionary to track header occurrences
+    Set headerDict = CreateObject("Scripting.Dictionary")
+
+    ' Rename duplicate headers
+    For j = 1 To lastCol
+        fieldName = wsData.Cells(1, j).Value
+        If headerDict.Exists(fieldName) Then
+            headerDict(fieldName) = headerDict(fieldName) + 1
+            wsData.Cells(1, j).Value = fieldName & "_" & headerDict(fieldName) ' Rename duplicate header
+        Else
+            headerDict.Add fieldName, 1 ' First occurrence
+        End If
+    Next j
+
+    ' Set the data range for the Pivot Tables
+    Set dataRange = wsData.Range(wsData.Cells(1, 1), wsData.Cells(lastRow, lastCol))
+
+    ' Create the Pivot Cache
+    Set ptCache = ThisWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:=dataRange)
+
+    ' Initialize starting row for the first pivot table
+    pivotStartRow = 1
+
+    ' Loop through each column to create a separate pivot table
+    For j = 1 To lastCol
+        fieldName = wsData.Cells(1, j).Value ' Get the field name from the header row
+
+        ' Create the Pivot Table
+        Set pt = ptCache.CreatePivotTable(TableDestination:=wsPivot.Cells(pivotStartRow, 1), TableName:="PivotTable_" & fieldName)
+
+        ' Add Row field
+        With pt
+            .PivotFields(fieldName).Orientation = xlRowField
+            .PivotFields(fieldName).Position = 1 ' Adjust the position accordingly
+
+            ' Add Value field as count
+            With .PivotFields(fieldName)
+                .Orientation = xlDataField
+                .Function = xlCount
+                .Position = 1 ' Position for Count
+                .NumberFormat = "0" ' Format as whole number
+            End With
+
+            ' Add Value field as count % of column total
+            With .PivotFields(fieldName)
+                .Orientation = xlDataField
+                .Function = xlCount
+                .Position = 2 ' Position for Percentage
+                .Calculation = xlPercentOfColumn ' Set to % of Column Total
+                .NumberFormat = "0.00%" ' Format as percentage
+                .Name = fieldName & " % of Total"
+            End With
+            
+            ' Add the specified field to the column area
+            If .PivotFields(columnField).Orientation <> xlColumnField Then
+                .PivotFields(columnField).Orientation = xlColumnField
+                .PivotFields(columnField).Position = 1 ' Position for Column field
+            End If
+        End With
+
+        ' Move the starting row for the next pivot table to be placed below the current one
+        pivotStartRow = pivotStartRow + pt.TableRange2.Rows.Count + 3 ' Add space between pivot tables
+    Next j
+
+    ' Optionally, format the Pivot Tables
+    Dim pivotTable As PivotTable
+    For Each pivotTable In wsPivot.PivotTables
+        pivotTable.TableStyle2 = "PivotStyleLight16" ' Change the style as needed
+    Next pivotTable
+End Sub
+
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+Prompt for Column Field:
+The code prompts the user to enter the name of the field they want to place in the Column area.
+You will enter this field name in the input box that pops up when running the macro.
+
+Adding the Field to the Column Area:
+The specified field is added to the Column area of the pivot table using .Orientation = xlColumnField.
+
+Count and Percentage:
+For each field in the Row area, both the count and the percentage of the column total are calculated, as in the previous code.
+
+
+
+Running the Code:
+Follow the same steps to run this VBA code in Excel.
+When you run the macro, you will be prompted to enter the name of the field that you want to place in the Column area.
+The pivot tables will then be created with the count, percentage of column total, and the specified field in the Column area.
+
+
+Example Workflow:
+Let's say your dataset has fields like Name, Age, Gender, and Score.
+You run the macro and, when prompted, enter "Gender" as the field for the Column area.
+The output will be pivot tables where:
+Each pivot table has rows of unique values for the field in the Row area (e.g., Name).
+The pivot table values show the count and percentage of column total.
+Gender will appear in the Column area, breaking down the counts by gender.
