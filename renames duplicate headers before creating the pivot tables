@@ -1,4 +1,5 @@
-When dealing with datasets that have duplicate headers, it can complicate the creation of pivot tables in Excel VBA because each field in a pivot table must be uniquely identifiable. Here's how you can handle duplicate headers in your dataset:
+When dealing with datasets that have duplicate headers, it can complicate the creation of pivot tables in Excel VBA because each field in a pivot table 
+must be uniquely identifiable. Here's how you can handle duplicate headers in your dataset:
 
 Approach to Handle Duplicate Headers
 Modify Duplicate Headers: Before creating the pivot table, you can dynamically rename duplicate headers to ensure each header is unique.
@@ -124,5 +125,5 @@ Step 3: Run the CreateDynamicPivotTablesWithDuplicateHeaders macro.
 
 
 Result
-The resulting pivot tables will be created based on the unique headers, allowing you to handle datasets with duplicate headers efficiently. Let me know if you need further adjustments or assistance!
+The resulting pivot tables will be created based on the unique headers, allowing you to handle datasets with duplicate headers efficiently. 
 
