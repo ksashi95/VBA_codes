@@ -1,0 +1,113 @@
+To calculate both the count and the percentage of the column total in the Pivot Table, you'll need to modify the VBA code to include both fields. 
+Here's an updated version of the VBA code that will create Pivot Tables showing the count and the percentage of the column total for each column.
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+Updated VBA Code for Count and Percentage of Column Total:
+
+Sub CreateDynamicPivotTablesWithCountAndPercentage()
+    Dim wsData As Worksheet
+    Dim wsPivot As Worksheet
+    Dim ptCache As PivotCache
+    Dim pt As PivotTable
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim dataRange As Range
+    Dim pivotStartRow As Long
+    Dim i As Integer
+    Dim fieldName As String
+    Dim headerDict As Object
+    Dim j As Integer
+
+    ' Set your data worksheet (change "Sheet1" to your actual sheet name)
+    On Error Resume Next
+    Set wsData = ThisWorkbook.Worksheets("Sheet1") ' Change to your data sheet name
+    On Error GoTo 0
+    
+    If wsData Is Nothing Then
+        MsgBox "Worksheet 'Sheet1' does not exist. Please check the name."
+        Exit Sub
+    End If
+
+    Set wsPivot = ThisWorkbook.Worksheets.Add ' Create a new sheet for the Pivot Tables
+
+    ' Find the last row and column in the data sheet
+    lastRow = wsData.Cells(wsData.Rows.Count, 1).End(xlUp).Row
+    lastCol = wsData.Cells(1, wsData.Columns.Count).End(xlToLeft).Column
+
+    ' Check if the dataset has enough data
+    If lastRow < 1 Or lastCol < 2 Then
+        MsgBox "The dataset is empty or does not have enough columns."
+        Exit Sub
+    End If
+
+    ' Initialize the dictionary to track header occurrences
+    Set headerDict = CreateObject("Scripting.Dictionary")
+
+    ' Rename duplicate headers
+    For j = 1 To lastCol
+        fieldName = wsData.Cells(1, j).Value
+        If headerDict.Exists(fieldName) Then
+            headerDict(fieldName) = headerDict(fieldName) + 1
+            wsData.Cells(1, j).Value = fieldName & "_" & headerDict(fieldName) ' Rename duplicate header
+        Else
+            headerDict.Add fieldName, 1 ' First occurrence
+        End If
+    Next j
+
+    ' Set the data range for the Pivot Tables
+    Set dataRange = wsData.Range(wsData.Cells(1, 1), wsData.Cells(lastRow, lastCol))
+
+    ' Create the Pivot Cache
+    Set ptCache = ThisWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:=dataRange)
+
+    ' Initialize starting row for the first pivot table
+    pivotStartRow = 1
+
+    ' Loop through each column to create a separate pivot table
+    For j = 1 To lastCol
+        fieldName = wsData.Cells(1, j).Value ' Get the field name from the header row
+
+        ' Create the Pivot Table
+        Set pt = ptCache.CreatePivotTable(TableDestination:=wsPivot.Cells(pivotStartRow, 1), TableName:="PivotTable_" & fieldName)
+
+        ' Add Row field
+        With pt
+            .PivotFields(fieldName).Orientation = xlRowField
+            .PivotFields(fieldName).Position = 1 ' Adjust the position accordingly
+
+            ' Add Value field as count
+            With .PivotFields(fieldName)
+                .Orientation = xlDataField
+                .Function = xlCount
+                .Position = 1 ' Position for Count
+                .NumberFormat = "0" ' Format as whole number
+            End With
+
+            ' Add Value field as count % of column total
+            With .PivotFields(fieldName)
+                .Orientation = xlDataField
+                .Function = xlCount
+                .Position = 2 ' Position for Percentage
+                .Calculation = xlPercentOfColumn ' Set to % of Column Total
+                .NumberFormat = "0.00%" ' Format as percentage
+                .Name = fieldName & " % of Total"
+            End With
+        End With
+
+        ' Move the starting row for the next pivot table to be placed below the current one
+        pivotStartRow = pivotStartRow + pt.TableRange2.Rows.Count + 3 ' Add space between pivot tables
+    Next j
+
+    ' Optionally, format the Pivot Tables
+    Dim pivotTable As PivotTable
+    For Each pivotTable In wsPivot.PivotTables
+        pivotTable.TableStyle2 = "PivotStyleLight16" ' Change the style as needed
+    Next pivotTable
+End Sub
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+Expected Output:
+Each pivot table will show:
+
+Count: The number of occurrences for each unique value in the column.
+Percentage of Column Total: The percentage that each count represents relative to the total count for that column.
