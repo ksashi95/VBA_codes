@@ -2,7 +2,7 @@ To calculate both the count and the percentage of the column total in the Pivot 
 Here's an updated version of the VBA code that will create Pivot Tables showing the count and the percentage of the column total for each column.
 
 -------------------------------------------------------------------------------------------------------------------------------------------
-# Updated VBA Code for Count and Percentage of Column Total:
+## Updated VBA Code for Count and Percentage of Column Total:
 
 Sub CreateDynamicPivotTablesWithCountAndPercentage()
     Dim wsData As Worksheet
